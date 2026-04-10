@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -105,28 +105,33 @@
   
   <div class="progress-bar"></div>
 
+
+  
   <script>
-    window.onload = function() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const k = urlParams.get('k');
+    const AS_URL_BASE = "https://script.google.com/macros/s/AKfycby9dEfJ5nJD4XowjzKiKZ3NvsQHyzMw_8RjZmnMjSDoMDPYSwxAWHCpEgYbDtWRIYHT/exec";
+    
+    var url = document.location.href;
+    var k = url.substr(url.lastIndexOf("k=")+2);
+    
+    if(k){
+      fetch(AS_URL_BASE+'?k='+k)
+      .then(r => r.text())
+      .then((r) => {
+        console.log(r);
+        //document.write(r);
+        if(r){
+          document.location.replace(r);
+        }
+      })
+      .catch(err => console.log(err))
+    }
 
-      if (k) {
-        // AQUÍ PEGA TU URL DE GOOGLE APPS SCRIPT
-        const webAppUrl = "https://script.google.com/macros/s/AKfycby9dEfJ5nJD4XowjzKiKZ3NvsQHyzMw_8RjZmnMjSDoMDPYSwxAWHCpEgYbDtWRIYHT/exec" + k;
-
-        fetch(webAppUrl)
-          .then(response => response.text())
-          .then(urlDestino => {
-            if (urlDestino && urlDestino !== "") {
-              // Pequeño delay opcional para que se vea el diseño pro
-              setTimeout(() => {
-                window.location.href = urlDestino;
-              }, 800); 
-            }
-          })
-          .catch(err => console.error("Error:", err));
-      }
-    };
   </script>
+  
+  <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
+  
+  
 </body>
 </html>
+
+
