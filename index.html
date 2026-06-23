@@ -120,14 +120,31 @@
               fetch(AS_URL_BASE+'?k='+encodeURIComponent(k)+'&d='+encodeURIComponent(dominio))
       .then(r => r.text())
       .then((r) => {
-          if (r && r !== 'inactivo') {
-                        document.location.replace(r);
-          } else if (r === 'inactivo') {
-                        document.getElementById('loading').style.display = 'none';
-                        document.getElementById('msgError').style.display = 'flex';
-                        document.getElementById('msgTexto').textContent = 'Este QR esta temporalmente desactivado.';
-          }
-      })
+          // --- LOGICA DE RESPUESTA ---
+                if (r && r.startsWith('dominio_incorrecto|')) {
+                              // El QR no es para este dominio - mostrar pagina alternativa
+                              var dominioEsperado = r.split('|')[1] || '';
+                              document.getElementById('loading').style.display = 'none';
+                              document.getElementById('msgError').style.display = 'flex';
+                              document.getElementById('msgIcono').className = 'fa-solid fa-globe';
+                              document.getElementById('msgTexto').innerHTML =
+                                              'Este QR es exclusivo para:<br><strong>' + dominioEsperado + '</strong>';
+                } else if (r && r !== 'inactivo') {
+                              // Redireccion normal al target
+                              document.location.replace(r);
+                } else if (r === 'inactivo') {
+                              document.getElementById('loading').style.display = 'none';
+                              document.getElementById('msgError').style.display = 'flex';
+                              document.getElementById('msgIcono').className = 'fa-solid fa-ban';
+                              document.getElementById('msgTexto').textContent = 'Este QR esta temporalmente desactivado.';
+                } else {
+                              document.getElementById('loading').style.display = 'none';
+                              document.getElementById('msgError').style.display = 'flex';
+                              document.getElementById('msgIcono').className = 'fa-solid fa-triangle-exclamation';
+                              document.getElementById('msgTexto').textContent = 'Codigo QR no encontrado.';
+                }
+        
+                })
       .catch(err => console.log(err))
     }
 
@@ -135,7 +152,7 @@
   
       <!-- Mensaje de error / QR inactivo -->
       <div id="msgError" style="display:none; flex-direction:column; align-items:center; gap:12px;">
-              <i class="fa-solid fa-triangle-exclamation" style="font-size:48px; opacity:0.85;"></i>
+                    <i id="msgIcono" class="fa-solid fa-triangle-exclamation" style="font-size:48px; opacity:0.85;"></i>
               <p id="msgTexto" style="font-size:1rem; letter-spacing:1px; opacity:0.9; text-align:center;">QR no disponible en este momento.</p>
       </div>
   
