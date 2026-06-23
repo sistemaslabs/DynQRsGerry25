@@ -108,56 +108,100 @@
 
   
   <script>
-    const AS_URL_BASE = "https://script.google.com/macros/s/AKfycby9dEfJ5nJD4XowjzKiKZ3NvsQHyzMw_8RjZmnMjSDoMDPYSwxAWHCpEgYbDtWRIYHT/exec";
-    
+        const AS_URL_BASE = "https://script.google.com/macros/s/AKfycby9dEfJ5nJD4XowjzKiKZ3NvsQHyzMw_8RjZmnMjSDoMDPYSwxAWHCpEgYbDtWRIYHT/exec";
+
         // FIX: URLSearchParams captura k correctamente aunque haya mas parametros
         var params = new URLSearchParams(document.location.search);
         var k = params.get('k');
-        // OPCION B: Dominio del visitante para redireccion personalizada
-        var dominio = window.location.hostname;
-    
-    if(k){
-              fetch(AS_URL_BASE+'?k='+encodeURIComponent(k)+'&d='+encodeURIComponent(dominio))
-      .then(r => r.text())
-      .then((r) => {
-          // --- LOGICA DE RESPUESTA ---
-                if (r && r.startsWith('dominio_incorrecto|')) {
-                              // El QR no es para este dominio - mostrar pagina alternativa
-                              var dominioEsperado = r.split('|')[1] || '';
-                              document.getElementById('loading').style.display = 'none';
-                              document.getElementById('msgError').style.display = 'flex';
-                              document.getElementById('msgIcono').className = 'fa-solid fa-globe';
-                              document.getElementById('msgTexto').innerHTML =
-                                              'Este QR es exclusivo para:<br><strong>' + dominioEsperado + '</strong>';
-                } else if (r && r !== 'inactivo') {
-                              // Redireccion normal al target
-                              document.location.replace(r);
-                } else if (r === 'inactivo') {
-                              document.getElementById('loading').style.display = 'none';
-                              document.getElementById('msgError').style.display = 'flex';
-                              document.getElementById('msgIcono').className = 'fa-solid fa-ban';
-                              document.getElementById('msgTexto').textContent = 'Este QR esta temporalmente desactivado.';
-                } else {
-                              document.getElementById('loading').style.display = 'none';
-                              document.getElementById('msgError').style.display = 'flex';
-                              document.getElementById('msgIcono').className = 'fa-solid fa-triangle-exclamation';
-                              document.getElementById('msgTexto').textContent = 'Codigo QR no encontrado.';
-                }
-        
-                })
-      .catch(err => console.log(err))
-    }
 
+        // Dominio del visitante (para historial en Sheets)
+        var dominio = window.location.hostname;
+
+        // ─── TEMAS VISUALES POR MARCA ─────────────────────────────────────────
+        // Cada marca definida en col G de QRDinamicos tiene su propio gradiente.
+        // El Apps Script devuelve "tema|urlDestino" o solo "urlDestino".
+        var TEMAS = {
+                eurotecsa: {
+                          bg: "radial-gradient(circle at center, #6b0000, #c0392b, #e74c3c)",
+                          spinner: "#ffffff",
+                          texto: "#ffffff"
+                },
+                gsi: {
+                          bg: "radial-gradient(circle at center, #0d47a1, #1565c0, #1e88e5)",
+                          spinner: "#ffffff",
+                          texto: "#ffffff"
+                },
+                systemi: {
+                          bg: "radial-gradient(circle at center, #004d40, #00695c, #00897b)",
+                          spinner: "#ffffff",
+                          texto: "#ffffff"
+                },
+                premiaya: {
+                          bg: "radial-gradient(circle at center, #e65100, #f57c00, #ffa000)",
+                          spinner: "#ffffff",
+                          texto: "#ffffff"
+                }
+        };
+
+        function aplicarTema(nombreTema) {
+                var t = TEMAS[nombreTema] || null;
+                if (!t) return; // sin tema: mantiene el gradiente default del CSS
+                document.body.style.background = t.bg;
+                document.body.style.backgroundSize = "400% 400%";
+                // Cambiar color del spinner y barra al color del tema
+                var spinner = document.querySelector('.spinner');
+                if (spinner) spinner.style.borderLeftColor = t.spinner;
+        }
+
+        function mostrarError(icono, msg) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('msgError').style.display = 'flex';
+                document.getElementById('msgIcono').className = 'fa-solid ' + icono;
+                document.getElementById('msgTexto').innerHTML = msg;
+        }
+
+        if (k) {
+                fetch(AS_URL_BASE + '?k=' + encodeURIComponent(k) + '&d=' + encodeURIComponent(dominio))
+                  .then(r => r.text())
+                  .then(r => {
+                              if (!r) {
+                                            mostrarError('fa-triangle-exclamation', 'Codigo QR no encontrado.');
+                                            return;
+                              }
+                              if (r === 'inactivo') {
+                                            mostrarError('fa-ban', 'Este QR esta temporalmente desactivado.');
+                                            return;
+                              }
+
+                              // Detectar si viene con tema: "eurotecsa|https://..."
+                              var partes = r.split('|');
+                              if (partes.length >= 2) {
+                                            var tema    = partes[0].toLowerCase().trim();
+                                            var url     = partes.slice(1).join('|'); // por si la URL tiene | dentro
+                                            aplicarTema(tema);
+                                            // Breve pausa para que se vea el tema antes de redirigir
+                                            setTimeout(function() {
+                                                            document.location.replace(url);
+                                            }, 800);
+                              } else {
+                                            // Sin tema: redirige directamente
+                                            document.location.replace(r);
+                              }
+                  })
+                  .catch(function() {
+                              mostrarError('fa-triangle-exclamation', 'Error de conexion. Intenta de nuevo.');
+                  });
+        } else {
+                mostrarError('fa-triangle-exclamation', 'URL invalida: falta el parametro k.');
+        }
   </script>
-  
+
       <!-- Mensaje de error / QR inactivo -->
       <div id="msgError" style="display:none; flex-direction:column; align-items:center; gap:12px;">
-                    <i id="msgIcono" class="fa-solid fa-triangle-exclamation" style="font-size:48px; opacity:0.85;"></i>
+              <i id="msgIcono" class="fa-solid fa-triangle-exclamation" style="font-size:48px; opacity:0.85;"></i>
               <p id="msgTexto" style="font-size:1rem; letter-spacing:1px; opacity:0.9; text-align:center;">QR no disponible en este momento.</p>
       </div>
-  
-  
+
 </body>
 </html>
-
-
+  
