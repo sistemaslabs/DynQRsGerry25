@@ -110,25 +110,34 @@
   <script>
     const AS_URL_BASE = "https://script.google.com/macros/s/AKfycby9dEfJ5nJD4XowjzKiKZ3NvsQHyzMw_8RjZmnMjSDoMDPYSwxAWHCpEgYbDtWRIYHT/exec";
     
-    var url = document.location.href;
-    var k = url.substr(url.lastIndexOf("k=")+2);
+        // FIX: URLSearchParams captura k correctamente aunque haya mas parametros
+        var params = new URLSearchParams(document.location.search);
+        var k = params.get('k');
+        // OPCION B: Dominio del visitante para redireccion personalizada
+        var dominio = window.location.hostname;
     
     if(k){
-      fetch(AS_URL_BASE+'?k='+k)
+              fetch(AS_URL_BASE+'?k='+encodeURIComponent(k)+'&d='+encodeURIComponent(dominio))
       .then(r => r.text())
       .then((r) => {
-        console.log(r);
-        //document.write(r);
-        if(r){
-          document.location.replace(r);
-        }
+          if (r && r !== 'inactivo') {
+                        document.location.replace(r);
+          } else if (r === 'inactivo') {
+                        document.getElementById('loading').style.display = 'none';
+                        document.getElementById('msgError').style.display = 'flex';
+                        document.getElementById('msgTexto').textContent = 'Este QR esta temporalmente desactivado.';
+          }
       })
       .catch(err => console.log(err))
     }
 
   </script>
   
-  <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
+      <!-- Mensaje de error / QR inactivo -->
+      <div id="msgError" style="display:none; flex-direction:column; align-items:center; gap:12px;">
+              <i class="fa-solid fa-triangle-exclamation" style="font-size:48px; opacity:0.85;"></i>
+              <p id="msgTexto" style="font-size:1rem; letter-spacing:1px; opacity:0.9; text-align:center;">QR no disponible en este momento.</p>
+      </div>
   
   
 </body>
