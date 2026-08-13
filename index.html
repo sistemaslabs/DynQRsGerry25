@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cargando Proyecto...</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
+
   <style>
     /* Fondo con degradado moderno y animación de pulso */
     body {
@@ -28,6 +28,14 @@
       0% { background-position: 0% 50%; }
       50% { background-position: 100% 50%; }
       100% { background-position: 0% 50%; }
+    }
+
+    /* Bloque de carga. Se le da id para poderlo ocultar al mostrar un error. */
+    #loading {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
     }
 
     /* Contenedor del Logo/Icono */
@@ -95,18 +103,27 @@
 </head>
 <body>
 
-  <div class="logo-container">
-    <i class="fa-solid fa-qrcode"></i>
+  <!-- ── Bloque de carga ──────────────────────────────────────────────────── -->
+  <div id="loading">
+    <div class="logo-container">
+      <i class="fa-solid fa-qrcode"></i>
+    </div>
+
+    <div class="spinner"></div>
+
+    <div class="status-text">Validando Acceso</div>
+
+    <div class="progress-bar"></div>
   </div>
 
-  <div class="spinner"></div>
+  <!-- ── Mensaje de error / QR inactivo ───────────────────────────────────── -->
+  <!-- Va ANTES del <script> a proposito: el script llama a mostrarError() de
+       forma sincrona cuando falta 'k', y si el div todavia no existe falla. -->
+  <div id="msgError" style="display:none; flex-direction:column; align-items:center; gap:12px;">
+    <i id="msgIcono" class="fa-solid fa-triangle-exclamation" style="font-size:48px; opacity:0.85;"></i>
+    <p id="msgTexto" style="font-size:1rem; letter-spacing:1px; opacity:0.9; text-align:center;">QR no disponible en este momento.</p>
+  </div>
 
-  <div class="status-text">Validando Acceso</div>
-  
-  <div class="progress-bar"></div>
-
-
-  
   <script>
         const AS_URL_BASE = "https://script.google.com/macros/s/AKfycbzeAUxnJlxfNX-rf4RLYVFVugskeTVyZ2JsNgJ6ZU7avt3tkckUZnYpxH1iDanvW02M/exec";
 
@@ -154,10 +171,40 @@
         }
 
         function mostrarError(icono, msg) {
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('msgError').style.display = 'flex';
-                document.getElementById('msgIcono').className = 'fa-solid ' + icono;
-                document.getElementById('msgTexto').innerHTML = msg;
+                var cargando = document.getElementById('loading');
+                if (cargando) cargando.style.display = 'none';
+
+                var caja = document.getElementById('msgError');
+                if (caja) caja.style.display = 'flex';
+
+                var ico = document.getElementById('msgIcono');
+                if (ico) ico.className = 'fa-solid ' + icono;
+
+                var txt = document.getElementById('msgTexto');
+                if (txt) txt.innerHTML = msg;
+        }
+
+        /**
+         * Arrastra al destino los parametros extra que traia la URL de entrada.
+         * Se quita 'k' porque es la clave del propio redireccionador y al destino
+         * no le sirve.
+         */
+        function conParametrosExtra(destino) {
+                var entrada = new URLSearchParams(document.location.search);
+                entrada.delete('k');
+
+                var extras = entrada.toString();
+                if (!extras) return destino;   // sin extras, se comporta igual que hoy
+
+                // Si el destino trae ancla (#...), los parametros van ANTES del #.
+                var i     = destino.indexOf('#');
+                var ancla = i === -1 ? ''      : destino.slice(i);
+                var base  = i === -1 ? destino : destino.slice(0, i);
+
+                // Si el destino YA trae ?, hay que unir con &.
+                var sep = base.indexOf('?') === -1 ? '?' : '&';
+
+                return base + sep + extras + ancla;
         }
 
         if (k) {
@@ -181,11 +228,11 @@
                                             aplicarTema(tema);
                                             // Breve pausa para que se vea el tema antes de redirigir
                                             setTimeout(function() {
-                                                            document.location.replace(url);
+                                                            document.location.replace(conParametrosExtra(url));
                                             }, 800);
                               } else {
                                             // Sin tema: redirige directamente
-                                            document.location.replace(r);
+                                            document.location.replace(conParametrosExtra(r));
                               }
                   })
                   .catch(function() {
@@ -196,12 +243,5 @@
         }
   </script>
 
-      <!-- Mensaje de error / QR inactivo -->
-      <div id="msgError" style="display:none; flex-direction:column; align-items:center; gap:12px;">
-              <i id="msgIcono" class="fa-solid fa-triangle-exclamation" style="font-size:48px; opacity:0.85;"></i>
-              <p id="msgTexto" style="font-size:1rem; letter-spacing:1px; opacity:0.9; text-align:center;">QR no disponible en este momento.</p>
-      </div>
-
 </body>
 </html>
-  
