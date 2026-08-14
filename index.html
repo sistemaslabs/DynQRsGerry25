@@ -117,7 +117,11 @@
         var params  = new URLSearchParams(document.location.search);
         var k       = params.get('k');
         var m       = params.get('m');            // marca, para pintar de inmediato
-        var dominio = window.location.hostname;
+
+        // 14/08/2026: se elimino la variable 'dominio' y el parametro &d= que
+        // se le mandaba al Apps Script. Siempre valia "sistemaslabs.github.io"
+        // —el dominio de ESTA pagina, no el del visitante— asi que la columna
+        // DominioVisitante del historial nunca guardo lo que su nombre dice.
 
         // ─── MARCAS ────────────────────────────────────────────────────────
         // Cada marca de la columna Dominio del Sheet tiene su paleta y su logo.
@@ -201,7 +205,7 @@
         if (m) aplicarTema(m);
 
         if (k) {
-                fetch(AS_URL_BASE + '?k=' + encodeURIComponent(k) + '&d=' + encodeURIComponent(dominio))
+                fetch(AS_URL_BASE + '?k=' + encodeURIComponent(k))
                   .then(function (r) { return r.text(); })
                   .then(function (r) {
                               if (!r) {
